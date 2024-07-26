@@ -33,6 +33,7 @@ Project URL: https://github.com/oimasterkafuu/chat
     <div id="messages"></div>
     <input id="number" type="number" placeholder="接收方" />
     <input id="input" type="text" placeholder="消息" />
+    <input id="password" type="password" placeholder="密码" />
     <button id="send">发送</button>
     <script src="/socket.io/socket.io.js"></script>
     <script>
@@ -40,11 +41,26 @@ Project URL: https://github.com/oimasterkafuu/chat
         const messages = document.getElementById('messages');
         const input = document.getElementById('input');
         const number = document.getElementById('number');
+        const passwordInput = document.getElementById('password');
         const send = document.getElementById('send');
+        const header = "OIMENC8DB3F1";
 
         // 收到消息
-        socket.on('message', (message) => {
-            messages.innerHTML += `<p>${message}</p>`;
+        socket.on('message', (encryptedMessage) => {
+            const password = passwordInput.value;
+
+            if (!password) {
+                messages.innerHTML += `<p>请输入密码以解密消息</p>`;
+                return;
+            }
+
+            const encryptedData = new Uint8Array(encryptedMessage.split('').map(char => char.charCodeAt(0)));
+
+            decryptMessage(encryptedData, password).then((decryptedMessage) => {
+                messages.innerHTML += `<p>${decryptedMessage}</p>`;
+            }).catch((error) => {
+                messages.innerHTML += `<p>解密失败：${error.message}</p>`;
+            });
         });
 
         // 被赋予编号
@@ -52,23 +68,29 @@ Project URL: https://github.com/oimasterkafuu/chat
             messages.innerHTML += `<p>你的数字编号是：${number}</p>`;
         });
 
-
         // 发送消息
         send.addEventListener('click', () => {
             const receiver = number.value;
             const text = input.value;
+            const password = passwordInput.value;
 
-            // 空消息不发送
-            if (text === '') return;
+            // 空消息或空密码不发送
+            if (text === '' || password === '') return;
 
             // 禁用输入框和发送按钮
             input.disabled = true;
             send.disabled = true;
 
-            // 发送消息
-            socket.emit('message', {
-                receiver,
-                text
+            encryptMessage(text, password).then((encryptedMessage) => {
+                const encryptedStr = Array.from(encryptedMessage).map(byte => String.fromCharCode(byte)).join('');
+                socket.emit('message', {
+                    receiver,
+                    text: encryptedStr
+                });
+            }).catch((error) => {
+                messages.innerHTML += `<p>加密失败：${error.message}</p>`;
+                input.disabled = false;
+                send.disabled = false;
             });
         });
 
@@ -86,6 +108,62 @@ Project URL: https://github.com/oimasterkafuu/chat
             input.disabled = false;
             send.disabled = false;
         });
+
+        function encryptMessage(message, password) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(message);
+            const iv = crypto.getRandomValues(new Uint8Array(16));
+            const keyPromise = generateKey(password);
+
+            return keyPromise.then((key) => {
+                return crypto.subtle.encrypt({ name: 'AES-CBC', iv }, key, data)
+                    .then((encryptedData) => {
+                        const headerBytes = encoder.encode(header);
+                        const combinedData = new Uint8Array(headerBytes.length + iv.length + encryptedData.byteLength);
+                        combinedData.set(headerBytes, 0);
+                        combinedData.set(iv, headerBytes.length);
+                        combinedData.set(new Uint8Array(encryptedData), headerBytes.length + iv.length);
+                        return combinedData;
+                    });
+            });
+        }
+
+        function decryptMessage(encryptedMessage, password) {
+            const keyPromise = generateKey(password);
+            const decoder = new TextDecoder();
+            const headerBytes = new TextEncoder().encode(header);
+
+            return keyPromise.then((key) => {
+                if (!encryptedMessage.slice(0, headerBytes.length).every((value, index) => value === headerBytes[index])) {
+                    throw new Error('Invalid file header.');
+                }
+
+                const iv = encryptedMessage.slice(headerBytes.length, headerBytes.length + 16);
+                const encryptedData = encryptedMessage.slice(headerBytes.length + 16);
+
+                return crypto.subtle.decrypt({ name: 'AES-CBC', iv }, key, encryptedData)
+                    .then((decryptedData) => {
+                        return decoder.decode(new Uint8Array(decryptedData));
+                    })
+                    .catch((e) => {
+                        throw new Error('解密失败');
+                    });
+            });
+        }
+
+        function generateKey(password) {
+            const encoder = new TextEncoder();
+            const passwordBytes = encoder.encode(password);
+            return crypto.subtle.digest('SHA-256', passwordBytes).then((hash) => {
+                return crypto.subtle.importKey(
+                    'raw',
+                    hash,
+                    { name: 'AES-CBC' },
+                    false,
+                    ['encrypt', 'decrypt']
+                );
+            });
+        }
     </script>
 </body>
 
