@@ -22,14 +22,21 @@ Project URL: https://github.com/oimasterkafuu/chat
 */
 
 
-// 读取环境变量中的配置
-require('dotenv').config();
+// 创建一个 express 和 socket.io 服务器
+const express = require('express');
+const socketio = require('socket.io');
+const http = require('http');
 
-// 导入依赖
-const config = require('./src/config');
-const server = require('./src/server');
+const app = express();
+const server = http.createServer(app);
+const io = socketio(server);
 
-// 监听服务端口
-server.listen(config.port, () => {
-    console.log(`Server is running at http://localhost:${config.port}`);
-});
+// 静态转发 ./static
+const path = require('path');
+app.use(express.static(path.join(__dirname, 'static')));
+
+// 客户端 Socket 连接
+const socketHandler = require('./socket');
+socketHandler(io);
+
+module.exports = server;

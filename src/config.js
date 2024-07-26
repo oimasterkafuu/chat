@@ -22,14 +22,8 @@ Project URL: https://github.com/oimasterkafuu/chat
 */
 
 
-// 读取环境变量中的配置
-require('dotenv').config();
-
-// 导入依赖
-const config = require('./src/config');
-const server = require('./src/server');
-
-// 监听服务端口
-server.listen(config.port, () => {
-    console.log(`Server is running at http://localhost:${config.port}`);
-});
+// 默认配置
+module.exports = {
+    // 服务端口
+    port: process.env.PORT || 3000
+};

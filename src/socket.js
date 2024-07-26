@@ -22,14 +22,22 @@ Project URL: https://github.com/oimasterkafuu/chat
 */
 
 
-// 读取环境变量中的配置
-require('dotenv').config();
-
-// 导入依赖
-const config = require('./src/config');
-const server = require('./src/server');
-
-// 监听服务端口
-server.listen(config.port, () => {
-    console.log(`Server is running at http://localhost:${config.port}`);
-});
+module.exports = (io) => {
+    // 监听客户端连接
+    io.on('connection', (socket) => {
+        console.log(`Client ${socket.id} connected`);
+    
+        // 监听客户端发送的消息
+        socket.on('message', (message) => {
+            console.log(`Client ${socket.id} sent a message: ${message}`);
+    
+            // 将消息发送给所有客户端
+            io.emit('message', message);
+        });
+    
+        // 监听客户端断开连接
+        socket.on('disconnect', () => {
+            console.log(`Client ${socket.id} disconnected`);
+        });
+    });
+};
