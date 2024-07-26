@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>简单的聊天程序</title>
+</head>
+<body>
+    <h1>简单的聊天程序</h1>
+    <div id="messages"></div>
+    <input id="input" type="text" />
+    <button id="send">发送</button>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const messages = document.getElementById('messages');
+        const input = document.getElementById('input');
+        const send = document.getElementById('send');
+
+        socket.on('message', (message) => {
+            messages.innerHTML += `<p>${message}</p>`;
+        });
+
+        send.addEventListener('click', () => {
+            const text = input.value;
+            socket.emit('message', text);
+            input.value = '';
+        });
+    </script>
+</body>
+</html>
