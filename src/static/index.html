@@ -23,30 +23,70 @@ Project URL: https://github.com/oimasterkafuu/chat
 
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>简单的聊天程序</title>
 </head>
+
 <body>
     <h1>简单的聊天程序</h1>
     <div id="messages"></div>
-    <input id="input" type="text" />
+    <input id="number" type="number" placeholder="接收方" />
+    <input id="input" type="text" placeholder="消息" />
     <button id="send">发送</button>
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
         const messages = document.getElementById('messages');
         const input = document.getElementById('input');
+        const number = document.getElementById('number');
         const send = document.getElementById('send');
 
+        // 收到消息
         socket.on('message', (message) => {
             messages.innerHTML += `<p>${message}</p>`;
         });
 
+        // 被赋予编号
+        socket.on('number', (number) => {
+            messages.innerHTML += `<p>你的数字编号是：${number}</p>`;
+        });
+
+
+        // 发送消息
         send.addEventListener('click', () => {
+            const receiver = number.value;
             const text = input.value;
-            socket.emit('message', text);
+
+            // 空消息不发送
+            if (text === '') return;
+
+            // 禁用输入框和发送按钮
+            input.disabled = true;
+            send.disabled = true;
+
+            // 发送消息
+            socket.emit('message', {
+                receiver,
+                text
+            });
+        });
+
+        // 发送成功
+        socket.on('ok', () => {
+            messages.innerHTML += `<p>发送成功</p>`;
             input.value = '';
+            input.disabled = false;
+            send.disabled = false;
+        });
+
+        // 发送失败
+        socket.on('fail', (error) => {
+            messages.innerHTML += `<p>${error}</p>`;
+            input.disabled = false;
+            send.disabled = false;
         });
     </script>
 </body>
+
 </html>
