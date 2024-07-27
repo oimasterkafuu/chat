@@ -26,6 +26,12 @@ Project URL: https://github.com/oimasterkafuu/chat
 
 <head>
     <title>简单的聊天程序</title>
+
+    <!-- 引入 socket.io -->
+    <script src="/socket.io/socket.io.js"></script>
+
+    <!-- 引入 Dexie.js -->
+    <script src="https://unpkg.com/dexie/dist/dexie.min.js"></script>
 </head>
 
 <body>
@@ -35,14 +41,38 @@ Project URL: https://github.com/oimasterkafuu/chat
     <input id="input" type="text" placeholder="消息" />
     <input id="password" type="password" placeholder="密码" />
     <button id="send">发送</button>
-    <script src="/socket.io/socket.io.js"></script>
     <script>
+        // 初始化
+        // Socket 连接
         const socket = io();
+        
+        // indexedDB
+        const db = new Dexie('chat');
+        db.version(1).stores({
+            messages: '++id, text',
+            number: 'numberPass'
+        });
+
+        // 查询 number 中的数据，如果没有则插入
+        db.number
+            .toCollection()
+            .first()
+            .then((number) => {
+                if (!number) {
+                    socket.emit('number');
+                } else {
+                    socket.emit('number', number.numberPass);
+                }
+            });
+
+        // 绑定 DOM 元素
         const messages = document.getElementById('messages');
         const input = document.getElementById('input');
         const number = document.getElementById('number');
         const passwordInput = document.getElementById('password');
         const send = document.getElementById('send');
+
+        // 加密标头
         const header = "OIMENC8DB3F1";
 
         // 收到消息
@@ -66,6 +96,17 @@ Project URL: https://github.com/oimasterkafuu/chat
         // 被赋予编号
         socket.on('number', (number) => {
             messages.innerHTML += `<p>你的数字编号是：${number}</p>`;
+        });
+
+        // 被赋予密码
+        socket.on('numberpass', (numberpass) => {
+            // 清空 indexedDB 中 number 数据
+            db.number
+                .clear()
+                .then(() => {
+                    db.number
+                        .add({ numberPass: numberpass });
+                });
         });
 
         // 发送消息

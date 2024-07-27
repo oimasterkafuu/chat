@@ -21,6 +21,9 @@ Email: oimasterfake@icloud.com
 Project URL: https://github.com/oimasterkafuu/chat
 */
 
+const config = require("./config");
+const { encryptText, decryptText } = require("./util/aes");
+
 
 const clientNumbers = {};
 
@@ -30,10 +33,43 @@ module.exports = (io) => {
         console.log(`Client ${socket.id} connected`);
 
         // 赋予随机六位数编号
-        const number = Math.floor(Math.random() * (999999 - 100000) + 100000);
-        clientNumbers[socket.id] = number;
-        console.log(`Client ${socket.id} number: ${number}`);
-        socket.emit('number', number);
+        socket.on('number', (numberEncrypted) => {
+            // 客户端传过来的数字
+            if(numberEncrypted) {
+                console.log(`Client ${socket.id} numberpass: ${numberEncrypted}`);
+
+                try{
+                    const number = parseInt(decryptText(config.numberSecret, numberEncrypted));
+                    if(!number) {
+                        throw new Error('数字解密失败');
+                    }
+
+                    // 登记客户端编号
+                    clientNumbers[socket.id] = number;
+                    console.log(`Client ${socket.id} number: ${number}`);
+                    
+                    // 返回给客户端
+                    socket.emit('number', number);
+                    // socket.emit('numberpass', encryptText(config.numberSecret, number.toString()));
+                    return;
+                } catch(e) {
+                    socket.emit('error', '数字解密失败');
+                }
+            }
+
+            // 客户端密码无效，生成随机六位数
+            console.log(`Client ${socket.id} numberpass error`);
+            const number = Math.floor(Math.random() * (999999 - 100000) + 100000);
+            const numberPass = encryptText(config.numberSecret, number.toString());
+
+            // 登记客户端编号
+            clientNumbers[socket.id] = number;
+            console.log(`Client ${socket.id} number: ${number}, numberpass: ${numberPass}`);
+
+            // 返回给客户端
+            socket.emit('number', number);
+            socket.emit('numberpass', numberPass);
+        });
 
         // 监听客户端发送的消息
         socket.on('message', (data) => {
