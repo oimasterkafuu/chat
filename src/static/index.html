@@ -21,192 +21,46 @@ Email: oimasterfake@icloud.com
 Project URL: https://github.com/oimasterkafuu/chat
 -->
 
-<!DOCTYPE html>
-<html>
+<script src="js/sha256.js"></script>
+<script src="js/aes.js"></script>
+<script src="js/rsa.js"></script>
 
-<head>
-    <title>简单的聊天程序</title>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
 
-    <!-- 引入 socket.io -->
-    <script src="/socket.io/socket.io.js"></script>
+    socket.on('connect', async () => {
+        console.log('已连接');
 
-    <!-- 引入 Dexie.js -->
-    <script src="https://unpkg.com/dexie/dist/dexie.min.js"></script>
-</head>
-
-<body>
-    <h1>简单的聊天程序</h1>
-    <div id="messages"></div>
-    <input id="number" type="number" placeholder="接收方" />
-    <input id="input" type="text" placeholder="消息" />
-    <input id="password" type="password" placeholder="密码" />
-    <button id="send">发送</button>
-    <script>
-        // 初始化
-        // Socket 连接
-        const socket = io();
-        
-        // indexedDB
-        const db = new Dexie('chat');
-        db.version(1).stores({
-            messages: '++id, text',
-            number: 'numberPass'
+        socket.on('msg', async (data) => {
+            console.log(await decryptText('oimasterkafuu', data));
         });
 
-        // 查询 number 中的数据，如果没有则插入
-        db.number
-            .toCollection()
-            .first()
-            .then((number) => {
-                if (!number) {
-                    socket.emit('number');
-                } else {
-                    socket.emit('number', number.numberPass);
-                }
-            });
+        socket.emit('msg', await encryptText('oimasterkafuu', '你好！'));
+    });
+</script>
 
-        // 绑定 DOM 元素
-        const messages = document.getElementById('messages');
-        const input = document.getElementById('input');
-        const number = document.getElementById('number');
-        const passwordInput = document.getElementById('password');
-        const send = document.getElementById('send');
+<script>
+    (async () => {
+        const password = 'myPassword';
+        const inputText = '你好，世界！';
 
-        // 加密标头
-        const header = "OIMENC8DB3F1";
+        const encrypted = await encryptText(password, inputText);
+        const decrypted = await decryptText(password, encrypted);
 
-        // 收到消息
-        socket.on('message', (encryptedMessage) => {
-            const password = passwordInput.value;
+        console.log(encrypted, decrypted);
 
-            if (!password) {
-                messages.innerHTML += `<p>请输入密码以解密消息</p>`;
-                return;
-            }
 
-            const encryptedData = encryptedMessage;
+        // 生成一个密钥对
+        const { privateKey, publicKey } = await window.generateRSAKeyPair();
 
-            decryptMessage(encryptedData, password).then((decryptedMessage) => {
-                messages.innerHTML += `<p>${decryptedMessage}</p>`;
-            }).catch((error) => {
-                messages.innerHTML += `<p>解密失败：${error.message}</p>`;
-            });
-        });
 
-        // 被赋予编号
-        socket.on('number', (number) => {
-            messages.innerHTML += `<p>你的数字编号是：${number}</p>`;
-        });
+        // 加密输入文本
+        const encryptedText = await window.encryptRSA(publicKey, inputText);
 
-        // 被赋予密码
-        socket.on('numberpass', (numberpass) => {
-            // 清空 indexedDB 中 number 数据
-            db.number
-                .clear()
-                .then(() => {
-                    db.number
-                        .add({ numberPass: numberpass });
-                });
-        });
+        // 解密加密后的文本
+        const decryptedText = await window.decryptRSA(privateKey, encryptedText);
 
-        // 发送消息
-        send.addEventListener('click', () => {
-            const receiver = number.value;
-            const text = input.value;
-            const password = passwordInput.value;
-
-            // 空消息或空密码不发送
-            if (text === '' || password === '') return;
-
-            // 禁用输入框和发送按钮
-            input.disabled = true;
-            send.disabled = true;
-
-            encryptMessage(text, password).then((encryptedMessage) => {
-                const encryptedStr = encryptedMessage;
-                socket.emit('message', {
-                    receiver,
-                    text: encryptedStr
-                });
-            }).catch((error) => {
-                messages.innerHTML += `<p>加密失败：${error.message}</p>`;
-                input.disabled = false;
-                send.disabled = false;
-            });
-        });
-
-        // 发送成功
-        socket.on('ok', () => {
-            messages.innerHTML += `<p>发送成功</p>`;
-            input.value = '';
-            input.disabled = false;
-            send.disabled = false;
-        });
-
-        // 发送失败
-        socket.on('fail', (error) => {
-            messages.innerHTML += `<p>${error}</p>`;
-            input.disabled = false;
-            send.disabled = false;
-        });
-
-        function encryptMessage(message, password) {
-            const encoder = new TextEncoder();
-            const data = encoder.encode(message);
-            const iv = crypto.getRandomValues(new Uint8Array(16));
-            const keyPromise = generateKey(password);
-
-            return keyPromise.then((key) => {
-                return crypto.subtle.encrypt({ name: 'AES-CBC', iv }, key, data)
-                    .then((encryptedData) => {
-                        const headerBytes = encoder.encode(header);
-                        const combinedData = new Uint8Array(headerBytes.length + iv.length + encryptedData.byteLength);
-                        combinedData.set(headerBytes, 0);
-                        combinedData.set(iv, headerBytes.length);
-                        combinedData.set(new Uint8Array(encryptedData), headerBytes.length + iv.length);
-                        return combinedData;
-                    });
-            });
-        }
-
-        function decryptMessage(encryptedMessage, password) {
-            const keyPromise = generateKey(password);
-            const decoder = new TextDecoder();
-            const headerBytes = new TextEncoder().encode(header);
-
-            const headerData = new Uint8Array(encryptedMessage.slice(0, headerBytes.length));
-            if (headerData.length !== headerBytes.length || !headerData.every((value, index) => value === headerBytes[index])) {
-                throw new Error('非法的消息头');
-            }
-
-            const iv = encryptedMessage.slice(headerBytes.length, headerBytes.length + 16);
-            const encryptedData = encryptedMessage.slice(headerBytes.length + 16);
-
-            return keyPromise.then((key) => {
-                return crypto.subtle.decrypt({ name: 'AES-CBC', iv }, key, encryptedData)
-                    .then((decryptedData) => {
-                        return decoder.decode(new Uint8Array(decryptedData));
-                    })
-                    .catch((e) => {
-                        throw new Error('解密失败');
-                    });
-            });
-        }
-
-        function generateKey(password) {
-            const encoder = new TextEncoder();
-            const passwordBytes = encoder.encode(password);
-            return crypto.subtle.digest('SHA-256', passwordBytes).then((hash) => {
-                return crypto.subtle.importKey(
-                    'raw',
-                    hash,
-                    { name: 'AES-CBC' },
-                    false,
-                    ['encrypt', 'decrypt']
-                );
-            });
-        }
-    </script>
-</body>
-
-</html>
+        console.log(privateKey, publicKey, encryptedText, decryptedText);
+    })();
+</script>

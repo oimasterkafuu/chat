@@ -23,45 +23,71 @@ Project URL: https://github.com/oimasterkafuu/chat
 
 const crypto = require('crypto');
 
-// 定义文件头
+/**
+ * 定义文件头
+ * @type {string}
+ */
 const header = 'OIMENC8DB3F1';
 
-// 生成 AES 密钥
+/**
+ * 生成 AES 密钥
+ * @param {string} password - 密码
+ * @returns {Buffer} - 密钥
+ */
 function generateKey(password) {
-    return crypto.createHash('sha256').update(password).digest().slice(0, 16);
+    return crypto.createHash('sha256').update(password).digest().slice(0, 32);
 }
 
-// 生成随机的初始化向量
+/**
+ * 生成随机的初始化向量
+ * @returns {Buffer} - 初始化向量
+ */
 function generateIV() {
-    return crypto.randomBytes(16); // 16 bytes for AES-128
+    return crypto.randomBytes(16); // 16 bytes for AES-256
 }
 
-// 加密文本
+/**
+ * 加密文本
+ * @param {string} password - 密码
+ * @param {string} inputText - 输入文本
+ * @returns {Buffer} - 加密后的文本
+ */
 function encryptText(password, inputText) {
     const key = generateKey(password);
-    const iv = generateIV(); // Generate a random IV
+    const iv = generateIV(); // 生成随机的初始化向量
 
     // 创建加密流
-    const cipher = crypto.createCipheriv('aes-128-cbc', key, iv);
+    const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
 
     // 加密文本
     const encrypted = Buffer.concat([Buffer.from(header), iv, cipher.update(inputText, 'utf8'), cipher.final()]);
     return encrypted;
 }
 
-// 解密文本
-function decryptText(password, encryptedText) {
+/**
+ * 解密文本
+ * @param {string} password - 密码
+ * @param {Buffer} encryptedBuffer - 加密文本
+ * @throws {Error} - 非法的消息头
+ * @returns {string} - 解密后的文本
+ */
+function decryptText(password, encryptedBuffer) {
     const key = generateKey(password);
 
-    if (!encryptedText.toString().startsWith(header)) {
+    if (!encryptedBuffer.toString().startsWith(header)) {
         throw new Error('非法的消息头');
     }
 
-    const iv = encryptedText.slice(header.length, header.length + 16);
-    const encryptedData = encryptedText.slice(header.length + 16); // 从 IV 后面开始
+    const iv = encryptedBuffer.slice(header.length, header.length + 16);
+    const encryptedData = encryptedBuffer.slice(header.length + 16); // 从 IV 后面开始
 
-    const decipher = crypto.createDecipheriv('aes-128-cbc', key, iv); // 使用 PKCS#7 填充
-    const decrypted = Buffer.concat([decipher.update(encryptedData), decipher.final()]);
+    const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
+    let decrypted;
+    try {
+        decrypted = Buffer.concat([decipher.update(encryptedData), decipher.final()]);
+    } catch (e) {
+        throw new Error('密码错误');
+    }
     return decrypted.toString('utf8');
 }
 
@@ -69,3 +95,4 @@ module.exports = {
     encryptText,
     decryptText
 };
+

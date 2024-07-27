@@ -25,8 +25,5 @@ Project URL: https://github.com/oimasterkafuu/chat
 // 默认配置
 module.exports = {
     // 服务端口
-    port: process.env.PORT || 3000,
-
-    // 数字加密密钥
-    numberSecret: process.env.NUMBER_SECRET || 'oimasterkafuu'
+    port: process.env.PORT || 3000
 };

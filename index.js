@@ -31,5 +31,5 @@ const server = require('./src/server');
 
 // 监听服务端口
 server.listen(config.port, () => {
-    console.log(`Server is running at http://localhost:${config.port}`);
+    console.log(`服务器已启动，可以通过 http://localhost:${config.port} 访问。`);
 });
