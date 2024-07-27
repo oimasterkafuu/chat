@@ -135,7 +135,7 @@ Project URL: https://github.com/oimasterkafuu/chat
 
             return keyPromise.then((key) => {
                 if (!encryptedMessage.slice(0, headerBytes.length).every((value, index) => value === headerBytes[index])) {
-                    throw new Error('Invalid file header.');
+                    throw new Error('非法的消息头');
                 }
 
                 const iv = encryptedMessage.slice(headerBytes.length, headerBytes.length + 16);
