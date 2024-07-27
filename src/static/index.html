@@ -21,46 +21,149 @@ Email: oimasterfake@icloud.com
 Project URL: https://github.com/oimasterkafuu/chat
 -->
 
-<script src="js/sha256.js"></script>
-<script src="js/aes.js"></script>
-<script src="js/rsa.js"></script>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat</title>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        header {
+            background-color: #86d7ff;
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        header img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+        header h1 {
+            margin: 0;
+            font-size: 1.2em;
+        }
+        #chat {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: linear-gradient(to bottom right, #ffffff, #e6e6e6);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        #input {
+            width: calc(100% - 40px);
+            padding: 10px;
+            margin: 10px 20px;
+            border: 1px solid #cccccc;
+            border-radius: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transition: box-shadow 0.3s;
+        }
+        #input:focus {
+            outline: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        .message {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 20px;
+            max-width: 70%;
+            word-wrap: break-word;
+            animation: fadeInFloat 0.5s cubic-bezier(0.17, 0.67, 0.78, 0.99);
+            position: relative;
+        }
+        .message.sent {
+            background-color: #6dcb83;
+            color: white;
+            margin-left: auto;
+            text-align: right;
+            align-self: flex-end;
+            border-bottom-right-radius: 0;
+        }
+        .message.received {
+            background-color: #82aede;
+            color: white;
+            margin-right: auto;
+            align-self: flex-start;
+            border-bottom-left-radius: 0;
+        }
+        /* Refactored animations */
+        @keyframes fadeInFloat {
+            0% {
+                opacity: 0;
+                transform: translateY(10px) scale(0.95);
+            }
+            50% {
+                transform: translateY(-5px) scale(1.05); /* Overshoot effect */
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+    </style>
+    <script src="js/sha256.js"></script>
+    <script src="js/aes.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+    <header>
+        <img src="avatar.png" alt="User Avatar">
+        <h1>Chat</h1>
+    </header>
+    <div id="chat"></div>
+    <input type="text" id="input" placeholder="输入消息">
+    <script>
+        const chat = document.getElementById('chat');
+        const input = document.getElementById('input');
+        const socket = io();
 
-<script src="/socket.io/socket.io.js"></script>
-<script>
-    const socket = io();
+        // 设置头像
+        const avatarImg = document.querySelector('header img');
+        avatarImg.src = 'https://oimaster.top/_next/image?url=https%3A%2F%2Foimaster.top%2Fapi%2Fv2%2Fobjects%2Favatar%2Fk93b8pt0mseeu5p2an.jpeg&w=96&q=75';
 
-    socket.on('connect', async () => {
-        console.log('已连接');
-
-        socket.on('msg', async (data) => {
-            console.log(await decryptText('oimasterkafuu', data));
+        socket.on('connect', () => {
+            console.log('已连接');
         });
 
-        socket.emit('msg', await encryptText('oimasterkafuu', '你好！'));
-    });
-</script>
+        function appendMessage(content, className) {
+            const message = document.createElement('div');
+            message.className = `message ${className}`;
+            message.innerText = content;
+            chat.appendChild(message);
+            chat.scrollTop = chat.scrollHeight; // 自动滚动到最底部
+        }
 
-<script>
-    (async () => {
-        const password = 'myPassword';
-        const inputText = '你好，世界！';
+        socket.on('msg', async (data) => {
+            const decryptedData = await decryptText('oimasterkafuu', data);
+            appendMessage(decryptedData, 'received');
+        });
 
-        const encrypted = await encryptText(password, inputText);
-        const decrypted = await decryptText(password, encrypted);
+        input.addEventListener('keydown', async (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                const message = input.value;
+                input.value = '';
+                if (message.trim()) {
+                    const encryptedMessage = await encryptText('oimasterkafuu', message);
+                    socket.emit('msg', encryptedMessage);
 
-        console.log(encrypted, decrypted);
-
-
-        // 生成一个密钥对
-        const { privateKey, publicKey } = await window.generateRSAKeyPair();
-
-
-        // 加密输入文本
-        const encryptedText = await window.encryptRSA(publicKey, inputText);
-
-        // 解密加密后的文本
-        const decryptedText = await window.decryptRSA(privateKey, encryptedText);
-
-        console.log(privateKey, publicKey, encryptedText, decryptedText);
-    })();
-</script>
+                    // 添加到聊天窗口
+                    appendMessage(message, 'sent');
+                }
+            }
+        });
+    </script>
+</body>
+</html>

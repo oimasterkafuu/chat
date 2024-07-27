@@ -30,7 +30,11 @@ module.exports = (io) => {
 
         socket.on('msg', (data) => {
             console.log(decryptText('oimasterkafuu', data));
-            io.emit('msg', data);
+            io.sockets.sockets.forEach((s) => {
+                if (s.id !== socket.id) {
+                    s.emit('msg', data);
+                }
+            });
         })
 
         socket.on('disconnect', () => {
