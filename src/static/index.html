@@ -24,7 +24,9 @@ Project URL: https://github.com/oimasterkafuu/chat
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Chat</title>
+    <title>简聊</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
     <style>
         body {
             font-family: 'Roboto', sans-serif;
@@ -119,8 +121,8 @@ Project URL: https://github.com/oimasterkafuu/chat
 </head>
 <body>
     <header>
-        <img src="avatar.png" alt="User Avatar">
-        <h1>Chat</h1>
+        <img src="https://oimaster.top/_next/image?url=https%3A%2F%2Foimaster.top%2Fapi%2Fv2%2Fobjects%2Favatar%2Fk93b8pt0mseeu5p2an.jpeg&w=96&q=75" alt="User Avatar">
+        <h1>简聊</h1>
     </header>
     <div id="chat"></div>
     <input type="text" id="input" placeholder="输入消息">
@@ -131,7 +133,7 @@ Project URL: https://github.com/oimasterkafuu/chat
 
         // 设置头像
         const avatarImg = document.querySelector('header img');
-        avatarImg.src = 'https://oimaster.top/_next/image?url=https%3A%2F%2Foimaster.top%2Fapi%2Fv2%2Fobjects%2Favatar%2Fk93b8pt0mseeu5p2an.jpeg&w=96&q=75';
+        // avatarImg.src = '';
 
         socket.on('connect', () => {
             console.log('已连接');
@@ -146,9 +148,15 @@ Project URL: https://github.com/oimasterkafuu/chat
         }
 
         socket.on('msg', async (data) => {
-            const decryptedData = await decryptText('oimasterkafuu', data);
-            appendMessage(decryptedData, 'received');
+            const decryptedData = JSON.parse(await decryptText('oimasterkafuu', data));
+
+            if(decryptedData.type === 'text-message') handleTextMessage(decryptedData);
+            else console.log('未知的消息类型 ' + decryptedData.type);
         });
+
+        function handleTextMessage(data) {
+            appendMessage(data.content, 'received');
+        }
 
         input.addEventListener('keydown', async (event) => {
             if (event.key === 'Enter') {
@@ -156,7 +164,11 @@ Project URL: https://github.com/oimasterkafuu/chat
                 const message = input.value;
                 input.value = '';
                 if (message.trim()) {
-                    const encryptedMessage = await encryptText('oimasterkafuu', message);
+                    const encryptedMessage = await encryptText('oimasterkafuu', JSON.stringify({
+                        type: "text-message",
+                        content: message
+                    }));
+
                     socket.emit('msg', encryptedMessage);
 
                     // 添加到聊天窗口
