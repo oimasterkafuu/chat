@@ -84,7 +84,7 @@ Project URL: https://github.com/oimasterkafuu/chat
                 return;
             }
 
-            const encryptedData = new Uint8Array(encryptedMessage.split('').map(char => char.charCodeAt(0)));
+            const encryptedData = encryptedMessage;
 
             decryptMessage(encryptedData, password).then((decryptedMessage) => {
                 messages.innerHTML += `<p>${decryptedMessage}</p>`;
@@ -123,7 +123,7 @@ Project URL: https://github.com/oimasterkafuu/chat
             send.disabled = true;
 
             encryptMessage(text, password).then((encryptedMessage) => {
-                const encryptedStr = Array.from(encryptedMessage).map(byte => String.fromCharCode(byte)).join('');
+                const encryptedStr = encryptedMessage;
                 socket.emit('message', {
                     receiver,
                     text: encryptedStr
@@ -174,14 +174,15 @@ Project URL: https://github.com/oimasterkafuu/chat
             const decoder = new TextDecoder();
             const headerBytes = new TextEncoder().encode(header);
 
+            const headerData = new Uint8Array(encryptedMessage.slice(0, headerBytes.length));
+            if (headerData.length !== headerBytes.length || !headerData.every((value, index) => value === headerBytes[index])) {
+                throw new Error('非法的消息头');
+            }
+
+            const iv = encryptedMessage.slice(headerBytes.length, headerBytes.length + 16);
+            const encryptedData = encryptedMessage.slice(headerBytes.length + 16);
+
             return keyPromise.then((key) => {
-                if (!encryptedMessage.slice(0, headerBytes.length).every((value, index) => value === headerBytes[index])) {
-                    throw new Error('非法的消息头');
-                }
-
-                const iv = encryptedMessage.slice(headerBytes.length, headerBytes.length + 16);
-                const encryptedData = encryptedMessage.slice(headerBytes.length + 16);
-
                 return crypto.subtle.decrypt({ name: 'AES-CBC', iv }, key, encryptedData)
                     .then((decryptedData) => {
                         return decoder.decode(new Uint8Array(decryptedData));
