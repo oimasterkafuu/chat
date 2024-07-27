@@ -6,7 +6,8 @@
   "license": "AGPL-3.0",
   "scripts": {
     "test": "jest --verbose --detectOpenHandles --forceExit --logHeapUsage --showSeed --coverage --bail",
-    "copy": "bash add-copyright.sh"
+    "copy": "bash add-copyright.sh",
+    "start": "node index.js"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
