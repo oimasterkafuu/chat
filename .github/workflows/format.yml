@@ -1,0 +1,38 @@
+name: Daily Format
+
+on:
+  schedule:
+    - cron: '0 17 * * *'  # 每天凌晨1:00（UTC+8），相当于UTC时间17:00
+
+jobs:
+  format-and-commit:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'  # 使用所需的Node.js版本
+
+    - name: Install dependencies
+      run: yarn install
+
+    - name: Run format script
+      run: yarn format
+
+    - name: Check for changes
+      run: |
+        if [[ `git status --porcelain` ]]; then
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "chore: format code"
+          git push
+        else
+          echo "No changes detected"
+        fi
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
