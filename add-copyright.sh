@@ -32,7 +32,7 @@ COMMENT_CSS="/*\n$COPYRIGHT_TEXT\n*/\n"
 
 # 遍历所有指定扩展名的文件，忽略node_modules目录
 for EXT in "${EXTENSIONS[@]}"; do
-    find . -type f -name "*.$EXT" ! -path "./node_modules/*" | while read FILE; do
+    find . -type f -name "*.$EXT" ! -path "./node_modules/*" ! -path "./coverage/*" | while read FILE; do
         # 选择适当的注释模板
         case "$EXT" in
             js) COPYRIGHT_NOTICE="$COMMENT_JS" ;;
