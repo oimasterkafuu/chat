@@ -127,6 +127,7 @@ Project URL: https://github.com/oimasterkafuu/chat
     <script src="js/sha256.js"></script>
     <script src="js/aes.js"></script>
     <script src="/socket.io/socket.io.js"></script>
+    <script src="https://unpkg.com/dexie/dist/dexie.min.js"></script>
 </head>
 <body>
     <header>
@@ -139,6 +140,11 @@ Project URL: https://github.com/oimasterkafuu/chat
     <div id="chat"></div>
     <input type="text" id="input" placeholder="输入消息">
     <script>
+        const db = new Dexie('chat_db');
+        db.version(2).stores({
+            messages: '++id, timestamp, content, is_mine'
+        });
+
         const chat = document.getElementById('chat');
         const input = document.getElementById('input');
         const socket = io();
@@ -152,23 +158,40 @@ Project URL: https://github.com/oimasterkafuu/chat
             console.log('已连接');
         });
 
-        function appendMessage(content, className) {
+        function appendMessage(content, className, isMine) {
             const message = document.createElement('div');
             message.className = `message ${className}`;
             message.innerText = content;
+            message.isMine = isMine; // 添加 isMine 属性
             chat.appendChild(message);
             chat.scrollTop = chat.scrollHeight; // 自动滚动到最底部
         }
 
+        function showMessages() {
+            db.messages.orderBy('timestamp').each(message => {
+                appendMessage(message.content, message.is_mine ? 'sent' : 'received', message.is_mine);
+            });
+        }
+
+        showMessages();
+
         socket.on('msg', async (data) => {
             const decryptedData = JSON.parse(await decryptText('oimasterkafuu', data));
 
-            if(decryptedData.type === 'text-message') handleTextMessage(decryptedData);
-            else console.log('未知的消息类型 ' + decryptedData.type);
+            if(decryptedData.type === 'text-message') {
+                handleTextMessage(decryptedData);
+                await db.messages.add({
+                    content: decryptedData.content,
+                    timestamp: Date.now(),
+                    is_mine: true // 添加 is_mine 字段
+                });
+            } else {
+                console.log('未知的消息类型 ' + decryptedData.type);
+            }
         });
 
         function handleTextMessage(data) {
-            appendMessage(data.content, 'received');
+            appendMessage(data.content, 'received', false);
         }
 
         input.addEventListener('keydown', async (event) => {
@@ -185,7 +208,12 @@ Project URL: https://github.com/oimasterkafuu/chat
                     socket.emit('msg', encryptedMessage);
 
                     // 添加到聊天窗口
-                    appendMessage(message, 'sent');
+                    appendMessage(message, 'sent', true);
+                    await db.messages.add({
+                        content: message,
+                        timestamp: Date.now(),
+                        is_mine: true // 添加 is_mine 字段
+                    });
                 }
             }
         });
