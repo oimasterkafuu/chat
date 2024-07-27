@@ -95,4 +95,3 @@ module.exports = {
     encryptText,
     decryptText
 };
-

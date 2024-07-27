@@ -21,203 +21,208 @@ Email: oimasterfake@icloud.com
 Project URL: https://github.com/oimasterkafuu/chat
 -->
 
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-    <title>简聊</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta charset="UTF-8">
-    <style>
-        body {
-            font-family: 'Roboto', sans-serif;
-            background-color: #f0f0f0;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-        }
-        header {
-            background-color: #86d7ff;
-            color: white;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
-            padding: 10px 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        header div.user-info {
-            display: flex;
-            align-items: center;
-        }
-        header img{
-            margin-right: 10px;
-        }
-        header img {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-        }
-        header h1 {
-            margin: 0;
-            font-size: 1.2em;
-        }
-        #chat {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-            background: linear-gradient(to bottom right, #ffffff, #e6e6e6);
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        #input {
-            width: calc(100% - 40px);
-            padding: 10px;
-            margin: 10px 20px;
-            border: 1px solid #cccccc;
-            border-radius: 20px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            transition: box-shadow 0.3s;
-        }
-        #input:focus {
-            outline: none;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        }
-        .message {
-            padding: 10px;
-            margin: 5px 0;
-            border-radius: 20px;
-            max-width: 70%;
-            word-wrap: break-word;
-            animation: fadeInFloat 0.5s cubic-bezier(0.17, 0.67, 0.78, 0.99);
-            position: relative;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .message.sent {
-            background-color: #6dcb83;
-            color: white;
-            margin-left: auto;
-            text-align: right;
-            align-self: flex-end;
-            border-bottom-right-radius: 0;
-        }
-        .message.received {
-            background-color: #82aede;
-            color: white;
-            margin-right: auto;
-            align-self: flex-start;
-            border-bottom-left-radius: 0;
-        }
-        /* Refactored animations */
-        @keyframes fadeInFloat {
-            0% {
-                opacity: 0;
-                transform: translateY(10px) scale(0.95);
+    <head>
+        <title>简聊</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta charset="UTF-8" />
+        <style>
+            body {
+                font-family: 'Roboto', sans-serif;
+                background-color: #f0f0f0;
+                margin: 0;
+                padding: 0;
+                display: flex;
+                flex-direction: column;
+                height: 100vh;
             }
-            50% {
-                transform: translateY(-5px) scale(1.05); /* Overshoot effect */
+            header {
+                background-color: #86d7ff;
+                color: white;
+                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+                padding: 10px 20px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
             }
-            100% {
-                opacity: 1;
-                transform: translateY(0) scale(1);
+            header div.user-info {
+                display: flex;
+                align-items: center;
             }
-        }
-    </style>
-    <script src="js/sha256.js"></script>
-    <script src="js/aes.js"></script>
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="https://unpkg.com/dexie/dist/dexie.min.js"></script>
-</head>
-<body>
-    <header>
-        <div class="user-info">
-            <img src="https://oimaster.top/_next/image?url=https%3A%2F%2Foimaster.top%2Fapi%2Fv2%2Fobjects%2Favatar%2Fk93b8pt0mseeu5p2an.jpeg&w=96&q=75" alt="User Avatar">
-            <span id="username">oimaster</span>
-        </div>
-        <h1>简聊</h1>
-    </header>
-    <div id="chat"></div>
-    <input type="text" id="input" placeholder="输入消息">
-    <script>
-        const db = new Dexie('chat_db');
-        db.version(2).stores({
-            messages: '++id, timestamp, content, is_mine'
-        });
-
-        const chat = document.getElementById('chat');
-        const input = document.getElementById('input');
-        const socket = io();
-
-        // 设置头像
-        const avatarImg = document.querySelector('header img');
-        // avatarImg.src = '';
-        const username = document.getElementById('username');
-
-        socket.on('connect', () => {
-            console.log('已连接');
-        });
-
-        function appendMessage(content, className, isMine) {
-            const message = document.createElement('div');
-            message.className = `message ${className}`;
-            message.innerText = content;
-            message.isMine = isMine; // 添加 isMine 属性
-            chat.appendChild(message);
-            chat.scrollTop = chat.scrollHeight; // 自动滚动到最底部
-        }
-
-        function showMessages() {
-            db.messages.orderBy('timestamp').each(message => {
-                appendMessage(message.content, message.is_mine ? 'sent' : 'received', message.is_mine);
+            header img {
+                margin-right: 10px;
+            }
+            header img {
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+            }
+            header h1 {
+                margin: 0;
+                font-size: 1.2em;
+            }
+            #chat {
+                flex: 1;
+                padding: 20px;
+                overflow-y: auto;
+                background: linear-gradient(to bottom right, #ffffff, #e6e6e6);
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+            #input {
+                width: calc(100% - 40px);
+                padding: 10px;
+                margin: 10px 20px;
+                border: 1px solid #cccccc;
+                border-radius: 20px;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                transition: box-shadow 0.3s;
+            }
+            #input:focus {
+                outline: none;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            }
+            .message {
+                padding: 10px;
+                margin: 5px 0;
+                border-radius: 20px;
+                max-width: 70%;
+                word-wrap: break-word;
+                animation: fadeInFloat 0.5s cubic-bezier(0.17, 0.67, 0.78, 0.99);
+                position: relative;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+            .message.sent {
+                background-color: #6dcb83;
+                color: white;
+                margin-left: auto;
+                text-align: right;
+                align-self: flex-end;
+                border-bottom-right-radius: 0;
+            }
+            .message.received {
+                background-color: #82aede;
+                color: white;
+                margin-right: auto;
+                align-self: flex-start;
+                border-bottom-left-radius: 0;
+            }
+            /* Refactored animations */
+            @keyframes fadeInFloat {
+                0% {
+                    opacity: 0;
+                    transform: translateY(10px) scale(0.95);
+                }
+                50% {
+                    transform: translateY(-5px) scale(1.05); /* Overshoot effect */
+                }
+                100% {
+                    opacity: 1;
+                    transform: translateY(0) scale(1);
+                }
+            }
+        </style>
+        <script src="js/sha256.js"></script>
+        <script src="js/aes.js"></script>
+        <script src="/socket.io/socket.io.js"></script>
+        <script src="https://unpkg.com/dexie/dist/dexie.min.js"></script>
+    </head>
+    <body>
+        <header>
+            <div class="user-info">
+                <img
+                    src="https://oimaster.top/_next/image?url=https%3A%2F%2Foimaster.top%2Fapi%2Fv2%2Fobjects%2Favatar%2Fk93b8pt0mseeu5p2an.jpeg&w=96&q=75"
+                    alt="User Avatar"
+                />
+                <span id="username">oimaster</span>
+            </div>
+            <h1>简聊</h1>
+        </header>
+        <div id="chat"></div>
+        <input type="text" id="input" placeholder="输入消息" />
+        <script>
+            const db = new Dexie('chat_db');
+            db.version(2).stores({
+                messages: '++id, timestamp, content, is_mine'
             });
-        }
 
-        showMessages();
+            const chat = document.getElementById('chat');
+            const input = document.getElementById('input');
+            const socket = io();
 
-        socket.on('msg', async (data) => {
-            const decryptedData = JSON.parse(await decryptText('oimasterkafuu', data));
+            // 设置头像
+            const avatarImg = document.querySelector('header img');
+            // avatarImg.src = '';
+            const username = document.getElementById('username');
 
-            if(decryptedData.type === 'text-message') {
-                handleTextMessage(decryptedData);
-                await db.messages.add({
-                    content: decryptedData.content,
-                    timestamp: Date.now(),
-                    is_mine: true // 添加 is_mine 字段
-                });
-            } else {
-                console.log('未知的消息类型 ' + decryptedData.type);
+            socket.on('connect', () => {
+                console.log('已连接');
+            });
+
+            function appendMessage(content, className, isMine) {
+                const message = document.createElement('div');
+                message.className = `message ${className}`;
+                message.innerText = content;
+                message.isMine = isMine; // 添加 isMine 属性
+                chat.appendChild(message);
+                chat.scrollTop = chat.scrollHeight; // 自动滚动到最底部
             }
-        });
 
-        function handleTextMessage(data) {
-            appendMessage(data.content, 'received', false);
-        }
+            function showMessages() {
+                db.messages.orderBy('timestamp').each((message) => {
+                    appendMessage(message.content, message.is_mine ? 'sent' : 'received', message.is_mine);
+                });
+            }
 
-        input.addEventListener('keydown', async (event) => {
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                const message = input.value;
-                input.value = '';
-                if (message.trim()) {
-                    const encryptedMessage = await encryptText('oimasterkafuu', JSON.stringify({
-                        type: "text-message",
-                        content: message
-                    }));
+            showMessages();
 
-                    socket.emit('msg', encryptedMessage);
+            socket.on('msg', async (data) => {
+                const decryptedData = JSON.parse(await decryptText('oimasterkafuu', data));
 
-                    // 添加到聊天窗口
-                    appendMessage(message, 'sent', true);
+                if (decryptedData.type === 'text-message') {
+                    handleTextMessage(decryptedData);
                     await db.messages.add({
-                        content: message,
+                        content: decryptedData.content,
                         timestamp: Date.now(),
                         is_mine: true // 添加 is_mine 字段
                     });
+                } else {
+                    console.log('未知的消息类型 ' + decryptedData.type);
                 }
-            }
-        });
-    </script>
-</body>
-</html>
+            });
 
+            function handleTextMessage(data) {
+                appendMessage(data.content, 'received', false);
+            }
+
+            input.addEventListener('keydown', async (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    const message = input.value;
+                    input.value = '';
+                    if (message.trim()) {
+                        const encryptedMessage = await encryptText(
+                            'oimasterkafuu',
+                            JSON.stringify({
+                                type: 'text-message',
+                                content: message
+                            })
+                        );
+
+                        socket.emit('msg', encryptedMessage);
+
+                        // 添加到聊天窗口
+                        appendMessage(message, 'sent', true);
+                        await db.messages.add({
+                            content: message,
+                            timestamp: Date.now(),
+                            is_mine: true // 添加 is_mine 字段
+                        });
+                    }
+                }
+            });
+        </script>
+    </body>
+</html>

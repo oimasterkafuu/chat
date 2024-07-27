@@ -21,7 +21,6 @@ Email: oimasterfake@icloud.com
 Project URL: https://github.com/oimasterkafuu/chat
 */
 
-
 // 默认配置
 module.exports = {
     // 服务端口

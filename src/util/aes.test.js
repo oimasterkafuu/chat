@@ -81,4 +81,3 @@ describe('AES 加密和解密', () => {
         expect(() => decryptText(password, modifiedEncrypted)).toThrow('非法的消息头');
     });
 });
-

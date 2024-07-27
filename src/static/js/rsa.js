@@ -31,13 +31,13 @@ Project URL: https://github.com/oimasterkafuu/chat
 async function generateRSAKeyPair(keySize = 2048) {
     const keyPair = await window.crypto.subtle.generateKey(
         {
-            name: "RSA-OAEP",
+            name: 'RSA-OAEP',
             modulusLength: keySize,
             publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
-            hash: { name: "SHA-256" }
+            hash: { name: 'SHA-256' }
         },
         true,
-        ["encrypt", "decrypt"]
+        ['encrypt', 'decrypt']
     );
     return keyPair;
 }
@@ -52,7 +52,7 @@ async function encryptRSA(publicKey, inputText) {
     const enc = new TextEncoder();
     return await window.crypto.subtle.encrypt(
         {
-            name: "RSA-OAEP"
+            name: 'RSA-OAEP'
         },
         publicKey,
         enc.encode(inputText)
@@ -68,7 +68,7 @@ async function encryptRSA(publicKey, inputText) {
 async function decryptRSA(privateKey, encryptedBuffer) {
     const decrypted = await window.crypto.subtle.decrypt(
         {
-            name: "RSA-OAEP"
+            name: 'RSA-OAEP'
         },
         privateKey,
         encryptedBuffer
@@ -87,7 +87,7 @@ async function encryptRSAwithPrivateKey(privateKey, inputText) {
     const enc = new TextEncoder();
     return await window.crypto.subtle.sign(
         {
-            name: "RSA-PSS",
+            name: 'RSA-PSS',
             saltLength: 32
         },
         privateKey,
@@ -104,12 +104,12 @@ async function encryptRSAwithPrivateKey(privateKey, inputText) {
 async function decryptRSAwithPublicKey(publicKey, encryptedBuffer) {
     const isVerified = await window.crypto.subtle.verify(
         {
-            name: "RSA-PSS",
+            name: 'RSA-PSS',
             saltLength: 32
         },
         publicKey,
         encryptedBuffer,
-        new TextEncoder().encode("验证字符串")
+        new TextEncoder().encode('验证字符串')
     );
     return isVerified;
 }

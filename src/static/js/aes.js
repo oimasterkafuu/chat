@@ -34,13 +34,7 @@ async function generateKey(password) {
     const keyHex = await generateSHA256Hash(password);
     const keyArray = hexToUint8Array(keyHex).slice(0, 32);
 
-    return await window.crypto.subtle.importKey(
-        'raw',
-        keyArray,
-        { name: 'AES-CBC' },
-        false,
-        ['encrypt', 'decrypt']
-    );
+    return await window.crypto.subtle.importKey('raw', keyArray, { name: 'AES-CBC' }, false, ['encrypt', 'decrypt']);
 }
 
 /**
@@ -82,7 +76,7 @@ async function encryptText(password, inputText) {
         key,
         enc.encode(inputText)
     );
-    
+
     const headerBytes = new TextEncoder().encode(header);
     const combined = new Uint8Array(headerBytes.length + iv.length + encrypted.byteLength);
     combined.set(headerBytes);
@@ -144,4 +138,3 @@ function compareUint8Arrays(a, b) {
     }
     return true;
 }
-

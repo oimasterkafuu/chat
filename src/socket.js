@@ -35,7 +35,7 @@ module.exports = (io) => {
                     s.emit('msg', data);
                 }
             });
-        })
+        });
 
         socket.on('disconnect', () => {
             console.log('一个客户端已断开');

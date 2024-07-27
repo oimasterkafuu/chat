@@ -21,7 +21,6 @@ Email: oimasterfake@icloud.com
 Project URL: https://github.com/oimasterkafuu/chat
 */
 
-
 // 创建一个 express 和 socket.io 服务器
 const express = require('express');
 const socketio = require('socket.io');

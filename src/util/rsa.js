@@ -30,11 +30,11 @@ const crypto = require('crypto');
  */
 function generateRSAKeyPair(keySize = 2048) {
     const { privateKey, publicKey } = crypto.generateKeyPairSync('rsa', {
-        modulusLength: keySize,
+        modulusLength: keySize
     });
     return {
         privateKey,
-        publicKey,
+        publicKey
     };
 }
 
@@ -85,4 +85,3 @@ module.exports = {
     decryptRSAwithPublicKey,
     encryptRSAwithPrivateKey
 };
-

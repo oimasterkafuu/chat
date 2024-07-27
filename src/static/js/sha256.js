@@ -42,6 +42,6 @@ async function generateSHA256Hash(inputText) {
  */
 function bufferToHex(buffer) {
     const byteArray = new Uint8Array(buffer);
-    const hexCodes = Array.from(byteArray).map(byte => byte.toString(16).padStart(2, '0'));
+    const hexCodes = Array.from(byteArray).map((byte) => byte.toString(16).padStart(2, '0'));
     return hexCodes.join('');
 }
