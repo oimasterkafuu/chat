@@ -46,6 +46,13 @@ Project URL: https://github.com/oimasterkafuu/chat
             align-items: center;
             justify-content: space-between;
         }
+        header div.user-info {
+            display: flex;
+            align-items: center;
+        }
+        header img{
+            margin-right: 10px;
+        }
         header img {
             width: 40px;
             height: 40px;
@@ -123,7 +130,10 @@ Project URL: https://github.com/oimasterkafuu/chat
 </head>
 <body>
     <header>
-        <img src="https://oimaster.top/_next/image?url=https%3A%2F%2Foimaster.top%2Fapi%2Fv2%2Fobjects%2Favatar%2Fk93b8pt0mseeu5p2an.jpeg&w=96&q=75" alt="User Avatar">
+        <div class="user-info">
+            <img src="https://oimaster.top/_next/image?url=https%3A%2F%2Foimaster.top%2Fapi%2Fv2%2Fobjects%2Favatar%2Fk93b8pt0mseeu5p2an.jpeg&w=96&q=75" alt="User Avatar">
+            <span id="username">oimaster</span>
+        </div>
         <h1>简聊</h1>
     </header>
     <div id="chat"></div>
@@ -136,6 +146,7 @@ Project URL: https://github.com/oimasterkafuu/chat
         // 设置头像
         const avatarImg = document.querySelector('header img');
         // avatarImg.src = '';
+        const username = document.getElementById('username');
 
         socket.on('connect', () => {
             console.log('已连接');
@@ -181,3 +192,4 @@ Project URL: https://github.com/oimasterkafuu/chat
     </script>
 </body>
 </html>
+
