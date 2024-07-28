@@ -69,7 +69,6 @@
                 display: flex;
                 flex-direction: column;
                 word-wrap: break-word;
-                animation: fadeInFloat 0.5s cubic-bezier(0.17, 0.67, 0.78, 0.99);
                 position: relative;
             }
             .message {
@@ -78,6 +77,7 @@
                 margin: 5px 0;
                 border-radius: 20px;
                 box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                animation: fadeInFloat 0.5s cubic-bezier(0.17, 0.67, 0.78, 0.99);
             }
             .message.sent {
                 background-color: #6dcb83;
@@ -186,16 +186,28 @@
                 container.appendChild(message);
                 container.appendChild(time);
                 chat.appendChild(container);
-                chat.scrollTop = chat.scrollHeight; // 自动滚动到最底部
+
+                // if(messageQueue.length === 0) {
+                    // chat.scrollTop = chat.scrollHeight; // 自动滚动到最底部
+                    chat.scrollTo({ top: chat.scrollHeight, behavior: 'smooth' }); // 平滑滚动到最底部
+                // }
             }
 
+            const messageQueue = [];
             function showMessages() {
-                db.messages.orderBy('timestamp').each((message) => {
-                    appendMessage(message.content, message.is_mine ? 'sent' : 'received', message.timestamp);
-                });
+                if (messageQueue.length === 0) {
+                    return;
+                }
+                const message = messageQueue.shift();
+                appendMessage(message.content, message.is_mine ? 'sent' : 'received', message.timestamp);
+                setTimeout(showMessages, 50);
             }
 
-            showMessages();
+            db.messages.orderBy('timestamp').each((message) => {
+                messageQueue.push(message);
+            }).then(() => {
+                showMessages();
+            });
 
             socket.on('msg', async (data) => {
                 const decryptedData = JSON.parse(await decryptText('oimasterkafuu', data));
