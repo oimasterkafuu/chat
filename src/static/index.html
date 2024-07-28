@@ -143,8 +143,8 @@ Project URL: https://github.com/oimasterkafuu/chat
         <div id="chat"></div>
         <input type="text" id="input" placeholder="输入消息" />
         <script>
-            const db = new Dexie('chat_db');
-            db.version(2).stores({
+            const db = new Dexie('chat');
+            db.version(1).stores({
                 messages: '++id, timestamp, content, is_mine'
             });
 
@@ -161,18 +161,17 @@ Project URL: https://github.com/oimasterkafuu/chat
                 console.log('已连接');
             });
 
-            function appendMessage(content, className, isMine) {
+            function appendMessage(content, className) {
                 const message = document.createElement('div');
                 message.className = `message ${className}`;
                 message.innerText = content;
-                message.isMine = isMine; // 添加 isMine 属性
                 chat.appendChild(message);
                 chat.scrollTop = chat.scrollHeight; // 自动滚动到最底部
             }
 
             function showMessages() {
                 db.messages.orderBy('timestamp').each((message) => {
-                    appendMessage(message.content, message.is_mine ? 'sent' : 'received', message.is_mine);
+                    appendMessage(message.content, message.is_mine ? 'sent' : 'received');
                 });
             }
 
@@ -186,7 +185,7 @@ Project URL: https://github.com/oimasterkafuu/chat
                     await db.messages.add({
                         content: decryptedData.content,
                         timestamp: Date.now(),
-                        is_mine: true // 添加 is_mine 字段
+                        is_mine: false // 添加 is_mine 字段
                     });
                 } else {
                     console.log('未知的消息类型 ' + decryptedData.type);
