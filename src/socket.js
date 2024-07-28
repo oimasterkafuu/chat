@@ -22,19 +22,36 @@ Project URL: https://github.com/oimasterkafuu/chat
 */
 
 const config = require('./config');
-const { decryptText } = require('./util/aes');
+const crypto = require('crypto');
+const { decryptText, encryptText } = require('./util/aes');
 
 module.exports = (io) => {
     io.on('connection', (socket) => {
         console.log('一个新的客户端已连接');
 
         socket.on('msg', (data) => {
-            console.log(decryptText('oimasterkafuu', data));
-            io.sockets.sockets.forEach((s) => {
-                if (s.id !== socket.id) {
-                    s.emit('msg', data);
+            data = JSON.parse(decryptText('oimasterkafuu', data));
+            console.log(data);
+            if (data.type === 'text-message') {
+                io.sockets.sockets.forEach((s) => {
+                    if (s.id !== socket.id) {
+                        s.emit('msg', encryptText('oimasterkafuu', JSON.stringify(data)));
+                    }
+                });
+            } else if (data.type === 'auth') {
+                // 提取 publicKey 和 hashedPublicKey
+                const { publicKey, hashedPublicKey } = data;
+                console.log(publicKey, hashedPublicKey);
+
+                // 验证哈希
+                const hashedPublicKeyString = crypto.createHash('sha256').update(JSON.stringify(publicKey)).digest('hex');
+
+                if (hashedPublicKeyString === hashedPublicKey) {
+                    socket.emit('msg', encryptText('oimasterkafuu', JSON.stringify({ type: 'auth', success: true })));
+                } else {
+                    socket.emit('msg', encryptText('oimasterkafuu', JSON.stringify({ type: 'auth', success: false })));
                 }
-            });
+            }
         });
 
         socket.on('disconnect', () => {
