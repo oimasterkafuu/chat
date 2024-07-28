@@ -84,6 +84,10 @@ Project URL: https://github.com/oimasterkafuu/chat
                 outline: none;
                 box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
             }
+            #input:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
             .message {
                 padding: 10px;
                 margin: 5px 0;
@@ -141,7 +145,7 @@ Project URL: https://github.com/oimasterkafuu/chat
             <h1>简聊</h1>
         </header>
         <div id="chat"></div>
-        <input type="text" id="input" placeholder="输入消息" />
+        <input type="text" id="input" placeholder="输入消息" disabled />
         <script>
             const db = new Dexie('chat');
             db.version(1).stores({
@@ -159,6 +163,8 @@ Project URL: https://github.com/oimasterkafuu/chat
 
             socket.on('connect', () => {
                 console.log('已连接');
+
+                input.removeAttribute('disabled');
             });
 
             function appendMessage(content, className) {
