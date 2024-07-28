@@ -44,7 +44,10 @@ module.exports = (io) => {
                 console.log(publicKey, hashedPublicKey);
 
                 // 验证哈希
-                const hashedPublicKeyString = crypto.createHash('sha256').update(JSON.stringify(publicKey)).digest('hex');
+                const hashedPublicKeyString = crypto
+                    .createHash('sha256')
+                    .update(JSON.stringify(publicKey))
+                    .digest('hex');
 
                 if (hashedPublicKeyString === hashedPublicKey) {
                     socket.emit('msg', encryptText('oimasterkafuu', JSON.stringify({ type: 'auth', success: true })));

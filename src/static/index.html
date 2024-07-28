@@ -23,349 +23,349 @@ Project URL: https://github.com/oimasterkafuu/chat
 
 <!doctype html>
 <html>
-
-<head>
-    <title>简聊</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta charset="UTF-8" />
-    <style>
-        body {
-            font-family: 'Roboto', sans-serif;
-            background-color: #f0f0f0;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-        }
-
-        header {
-            background-color: #86d7ff;
-            color: white;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-            padding: 10px 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        header div.user-info {
-            display: flex;
-            align-items: center;
-        }
-
-        header img {
-            margin-right: 10px;
-        }
-
-        header img {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-        }
-
-        header h1 {
-            margin: 0;
-            font-size: 1.2em;
-        }
-
-        #chat {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-            background: linear-gradient(to bottom right, #ffffff, #e6e6e6);
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        #input {
-            width: calc(100% - 40px);
-            padding: 10px;
-            margin: 10px 20px;
-            border: 1px solid #cccccc;
-            border-radius: 20px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            transition: box-shadow 0.3s;
-        }
-
-        #input:focus {
-            outline: none;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        }
-
-        #input:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .message-container {
-            display: flex;
-            flex-direction: column;
-            word-wrap: break-word;
-            position: relative;
-        }
-
-        .message {
-            max-width: 70%;
-            padding: 10px;
-            margin: 5px 0;
-            border-radius: 20px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            animation: fadeInFloat 0.5s cubic-bezier(0.17, 0.67, 0.78, 0.99);
-        }
-
-        .message.sent {
-            background-color: #6dcb83;
-            color: white;
-            margin-left: auto;
-            /* text-align: right; */
-            align-self: flex-end;
-            border-bottom-right-radius: 0;
-        }
-
-        .message.received {
-            background-color: #82aede;
-            color: white;
-            margin-right: auto;
-            align-self: flex-start;
-            border-bottom-left-radius: 0;
-        }
-
-        .timestamp {
-            font-size: 10px;
-            color: #777;
-            margin-bottom: 5px;
-        }
-
-        .timestamp.sent {
-            align-self: flex-end;
-            text-align: right;
-        }
-
-        .timestamp.received {
-            align-self: flex-start;
-            text-align: left;
-        }
-
-        @keyframes fadeInFloat {
-            0% {
-                opacity: 0;
-                transform: translateY(10px) scale(0.95);
+    <head>
+        <title>简聊</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta charset="UTF-8" />
+        <style>
+            body {
+                font-family: 'Roboto', sans-serif;
+                background-color: #f0f0f0;
+                margin: 0;
+                padding: 0;
+                display: flex;
+                flex-direction: column;
+                height: 100vh;
             }
 
-            50% {
-                transform: translateY(-5px) scale(1.05);
-                /* Overshoot effect */
+            header {
+                background-color: #86d7ff;
+                color: white;
+                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+                padding: 10px 20px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
             }
 
-            100% {
-                opacity: 1;
-                transform: translateY(0) scale(1);
+            header div.user-info {
+                display: flex;
+                align-items: center;
             }
-        }
-    </style>
-    <script src="js/sha256.js"></script>
-    <script src="js/aes.js"></script>
-    <script src="js/rsa.js"></script>
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="https://unpkg.com/dexie/dist/dexie.min.js"></script>
-</head>
 
-<body>
-    <header>
-        <div class="user-info">
-            <img src="https://oimaster.top/_next/image?url=https%3A%2F%2Foimaster.top%2Fapi%2Fv2%2Fobjects%2Favatar%2Fk93b8pt0mseeu5p2an.jpeg&w=96&q=75"
-                alt="User Avatar" />
-            <span id="username">oimaster</span>
-        </div>
-        <h1>简聊</h1>
-    </header>
-    <div id="chat"></div>
-    <input type="text" id="input" placeholder="输入消息" disabled />
-    <script>
-        const db = new Dexie('chat');
-        db.version(3).stores({
-            messages: '++id, timestamp, content, is_mine',
-            rsaKeys: '++id, publicKey, privateKey, exportedPublicKey, hashedPublicKey'
-        });
-
-        const chat = document.getElementById('chat');
-        const input = document.getElementById('input');
-        const socket = io();
-
-        // 设置头像
-        const avatarImg = document.querySelector('header img');
-        // avatarImg.src = '';
-        const username = document.getElementById('username');
-
-        socket.on('connect', () => {
-            console.log('已连接');
-
-            // input.removeAttribute('disabled');
-        });
-
-        function formatTime(timestamp) {
-            const date = new Date(timestamp);
-            // const year = date.getFullYear();
-            const month = (date.getMonth() + 1).toString().padStart(2, '0');
-            const day = date.getDate().toString().padStart(2, '0');
-            const hours = date.getHours().toString().padStart(2, '0');
-            const minutes = date.getMinutes().toString().padStart(2, '0');
-            const seconds = date.getSeconds().toString().padStart(2, '0');
-            return `${month}-${day} ${hours}:${minutes}:${seconds}`;
-        }
-
-        function appendMessage(content, className, timestamp) {
-            const container = document.createElement('div');
-            container.className = 'message-container';
-
-            const time = document.createElement('div');
-            time.className = `timestamp ${className}`;
-            time.innerText = formatTime(timestamp);
-
-            const message = document.createElement('div');
-            message.className = `message ${className}`;
-            message.innerText = content;
-
-            container.appendChild(message);
-            container.appendChild(time);
-            chat.appendChild(container);
-
-            // if(messageQueue.length === 0) {
-            // chat.scrollTop = chat.scrollHeight; // 自动滚动到最底部
-            chat.scrollTo({ top: chat.scrollHeight, behavior: 'smooth' }); // 平滑滚动到最底部
-            // }
-        }
-
-        const messageQueue = [];
-        function showMessages() {
-            if (messageQueue.length === 0) {
-                return;
+            header img {
+                margin-right: 10px;
             }
-            const message = messageQueue.shift();
-            appendMessage(message.content, message.is_mine ? 'sent' : 'received', message.timestamp);
-            setTimeout(showMessages, 50);
-        }
 
-        db.messages.orderBy('timestamp').each((message) => {
-            messageQueue.push(message);
-        }).then(() => {
-            showMessages();
-        });
+            header img {
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+            }
 
-        // RSA 鉴权
-        // 去 indexedDB 中获取公钥和私钥，没有就生成并储存
-        (async () => {
-            var { publicKey, privateKey, hashedPublicKey, exportedPublicKey } = await db.rsaKeys.get(1) || {};
+            header h1 {
+                margin: 0;
+                font-size: 1.2em;
+            }
 
-            console.log(publicKey, privateKey, hashedPublicKey, exportedPublicKey);
-            console.log(!publicKey , !privateKey , !hashedPublicKey , !exportedPublicKey)
+            #chat {
+                flex: 1;
+                padding: 20px;
+                overflow-y: auto;
+                background: linear-gradient(to bottom right, #ffffff, #e6e6e6);
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
 
-            // 生成公钥和私钥
-            if (!publicKey || !privateKey || !hashedPublicKey || !exportedPublicKey) {
-                const keys = await generateRSAKeyPair();
-                publicKey = keys.publicKey;
-                privateKey = keys.privateKey;
+            #input {
+                width: calc(100% - 40px);
+                padding: 10px;
+                margin: 10px 20px;
+                border: 1px solid #cccccc;
+                border-radius: 20px;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                transition: box-shadow 0.3s;
+            }
 
-                // 导出公钥
-                const exportedKey = await window.crypto.subtle.exportKey(
-                    "spki",
-                    publicKey
-                );
+            #input:focus {
+                outline: none;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            }
 
+            #input:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
 
-                function ab2str(buf) {
-                    return String.fromCharCode.apply(null, new Uint8Array(buf));
+            .message-container {
+                display: flex;
+                flex-direction: column;
+                word-wrap: break-word;
+                position: relative;
+            }
+
+            .message {
+                max-width: 70%;
+                padding: 10px;
+                margin: 5px 0;
+                border-radius: 20px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                animation: fadeInFloat 0.5s cubic-bezier(0.17, 0.67, 0.78, 0.99);
+            }
+
+            .message.sent {
+                background-color: #6dcb83;
+                color: white;
+                margin-left: auto;
+                /* text-align: right; */
+                align-self: flex-end;
+                border-bottom-right-radius: 0;
+            }
+
+            .message.received {
+                background-color: #82aede;
+                color: white;
+                margin-right: auto;
+                align-self: flex-start;
+                border-bottom-left-radius: 0;
+            }
+
+            .timestamp {
+                font-size: 10px;
+                color: #777;
+                margin-bottom: 5px;
+            }
+
+            .timestamp.sent {
+                align-self: flex-end;
+                text-align: right;
+            }
+
+            .timestamp.received {
+                align-self: flex-start;
+                text-align: left;
+            }
+
+            @keyframes fadeInFloat {
+                0% {
+                    opacity: 0;
+                    transform: translateY(10px) scale(0.95);
                 }
 
-                // 将公钥转换为PEM格式
-                const exportedAsString = ab2str(exportedKey);
-                const exportedAsBase64 = window.btoa(exportedAsString);
-                exportedPublicKey = `-----BEGIN PUBLIC KEY-----\n${exportedAsBase64.match(/.{1,64}/g).join('\n')}\n-----END PUBLIC KEY-----`;
+                50% {
+                    transform: translateY(-5px) scale(1.05);
+                    /* Overshoot effect */
+                }
 
-                // SHA256 哈希公钥
-                hashedPublicKey = await generateSHA256Hash(JSON.stringify(exportedPublicKey));
-                console.log(hashedPublicKey, window.userid);
+                100% {
+                    opacity: 1;
+                    transform: translateY(0) scale(1);
+                }
+            }
+        </style>
+        <script src="js/sha256.js"></script>
+        <script src="js/aes.js"></script>
+        <script src="js/rsa.js"></script>
+        <script src="/socket.io/socket.io.js"></script>
+        <script src="https://unpkg.com/dexie/dist/dexie.min.js"></script>
+    </head>
 
-                await db.rsaKeys.add({
-                    publicKey,
-                    privateKey,
-                    exportedPublicKey,
-                    hashedPublicKey
-                });
+    <body>
+        <header>
+            <div class="user-info">
+                <img
+                    src="https://oimaster.top/_next/image?url=https%3A%2F%2Foimaster.top%2Fapi%2Fv2%2Fobjects%2Favatar%2Fk93b8pt0mseeu5p2an.jpeg&w=96&q=75"
+                    alt="User Avatar"
+                />
+                <span id="username">oimaster</span>
+            </div>
+            <h1>简聊</h1>
+        </header>
+        <div id="chat"></div>
+        <input type="text" id="input" placeholder="输入消息" disabled />
+        <script>
+            const db = new Dexie('chat');
+            db.version(3).stores({
+                messages: '++id, timestamp, content, is_mine',
+                rsaKeys: '++id, publicKey, privateKey, exportedPublicKey, hashedPublicKey'
+            });
+
+            const chat = document.getElementById('chat');
+            const input = document.getElementById('input');
+            const socket = io();
+
+            // 设置头像
+            const avatarImg = document.querySelector('header img');
+            // avatarImg.src = '';
+            const username = document.getElementById('username');
+
+            socket.on('connect', () => {
+                console.log('已连接');
+
+                // input.removeAttribute('disabled');
+            });
+
+            function formatTime(timestamp) {
+                const date = new Date(timestamp);
+                // const year = date.getFullYear();
+                const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                const day = date.getDate().toString().padStart(2, '0');
+                const hours = date.getHours().toString().padStart(2, '0');
+                const minutes = date.getMinutes().toString().padStart(2, '0');
+                const seconds = date.getSeconds().toString().padStart(2, '0');
+                return `${month}-${day} ${hours}:${minutes}:${seconds}`;
             }
 
-            console.log(publicKey, privateKey, exportedPublicKey, hashedPublicKey);
+            function appendMessage(content, className, timestamp) {
+                const container = document.createElement('div');
+                container.className = 'message-container';
 
-            window.userid = hashedPublicKey.substring(0, 8);
+                const time = document.createElement('div');
+                time.className = `timestamp ${className}`;
+                time.innerText = formatTime(timestamp);
 
-            // 向服务器发送公钥和哈希验证
-            socket.emit('msg', await encryptText(
-                'oimasterkafuu',
-                JSON.stringify({
-                    type: 'auth',
-                    publicKey: exportedPublicKey,
-                    hashedPublicKey
+                const message = document.createElement('div');
+                message.className = `message ${className}`;
+                message.innerText = content;
+
+                container.appendChild(message);
+                container.appendChild(time);
+                chat.appendChild(container);
+
+                // if(messageQueue.length === 0) {
+                // chat.scrollTop = chat.scrollHeight; // 自动滚动到最底部
+                chat.scrollTo({ top: chat.scrollHeight, behavior: 'smooth' }); // 平滑滚动到最底部
+                // }
+            }
+
+            const messageQueue = [];
+            function showMessages() {
+                if (messageQueue.length === 0) {
+                    return;
+                }
+                const message = messageQueue.shift();
+                appendMessage(message.content, message.is_mine ? 'sent' : 'received', message.timestamp);
+                setTimeout(showMessages, 50);
+            }
+
+            db.messages
+                .orderBy('timestamp')
+                .each((message) => {
+                    messageQueue.push(message);
                 })
-            ));
-        })();
-
-        socket.on('msg', async (data) => {
-            const decryptedData = JSON.parse(await decryptText('oimasterkafuu', data));
-
-            if (decryptedData.type === 'text-message') {
-                handleTextMessage(decryptedData);
-                await db.messages.add({
-                    content: decryptedData.content,
-                    timestamp: Date.now(),
-                    is_mine: false // 添加 is_mine 字段
+                .then(() => {
+                    showMessages();
                 });
-            } else if (decryptedData.type === 'auth') {
-                if (decryptedData.success) {
-                    username.innerText = window.userid;
-                    input.removeAttribute('disabled');
-                }
-                else {
-                    console.log('鉴权失败');
-                }
-            }
-            else {
-                console.log('未知的消息类型 ' + decryptedData.type);
-            }
-        });
 
-        function handleTextMessage(data) {
-            appendMessage(data.content, 'received', Date.now());
-        }
+            // RSA 鉴权
+            // 去 indexedDB 中获取公钥和私钥，没有就生成并储存
+            (async () => {
+                var { publicKey, privateKey, hashedPublicKey, exportedPublicKey } = (await db.rsaKeys.get(1)) || {};
 
-        input.addEventListener('keydown', async (event) => {
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                const message = input.value;
-                input.value = '';
-                if (message.trim()) {
-                    const encryptedMessage = await encryptText(
-                        'oimasterkafuu',
-                        JSON.stringify({
-                            type: 'text-message',
-                            content: message
-                        })
-                    );
+                console.log(publicKey, privateKey, hashedPublicKey, exportedPublicKey);
+                console.log(!publicKey, !privateKey, !hashedPublicKey, !exportedPublicKey);
 
-                    socket.emit('msg', encryptedMessage);
+                // 生成公钥和私钥
+                if (!publicKey || !privateKey || !hashedPublicKey || !exportedPublicKey) {
+                    const keys = await generateRSAKeyPair();
+                    publicKey = keys.publicKey;
+                    privateKey = keys.privateKey;
 
-                    // 添加到聊天窗口
-                    appendMessage(message, 'sent', Date.now());
-                    await db.messages.add({
-                        content: message,
-                        timestamp: Date.now(),
-                        is_mine: true // 添加 is_mine 字段
+                    // 导出公钥
+                    const exportedKey = await window.crypto.subtle.exportKey('spki', publicKey);
+
+                    function ab2str(buf) {
+                        return String.fromCharCode.apply(null, new Uint8Array(buf));
+                    }
+
+                    // 将公钥转换为PEM格式
+                    const exportedAsString = ab2str(exportedKey);
+                    const exportedAsBase64 = window.btoa(exportedAsString);
+                    exportedPublicKey = `-----BEGIN PUBLIC KEY-----\n${exportedAsBase64.match(/.{1,64}/g).join('\n')}\n-----END PUBLIC KEY-----`;
+
+                    // SHA256 哈希公钥
+                    hashedPublicKey = await generateSHA256Hash(JSON.stringify(exportedPublicKey));
+                    console.log(hashedPublicKey, window.userid);
+
+                    await db.rsaKeys.add({
+                        publicKey,
+                        privateKey,
+                        exportedPublicKey,
+                        hashedPublicKey
                     });
                 }
-            }
-        });
-    </script>
-</body>
 
+                console.log(publicKey, privateKey, exportedPublicKey, hashedPublicKey);
+
+                window.userid = hashedPublicKey.substring(0, 8);
+
+                // 向服务器发送公钥和哈希验证
+                socket.emit(
+                    'msg',
+                    await encryptText(
+                        'oimasterkafuu',
+                        JSON.stringify({
+                            type: 'auth',
+                            publicKey: exportedPublicKey,
+                            hashedPublicKey
+                        })
+                    )
+                );
+            })();
+
+            socket.on('msg', async (data) => {
+                const decryptedData = JSON.parse(await decryptText('oimasterkafuu', data));
+
+                if (decryptedData.type === 'text-message') {
+                    handleTextMessage(decryptedData);
+                    await db.messages.add({
+                        content: decryptedData.content,
+                        timestamp: Date.now(),
+                        is_mine: false // 添加 is_mine 字段
+                    });
+                } else if (decryptedData.type === 'auth') {
+                    if (decryptedData.success) {
+                        username.innerText = window.userid;
+                        input.removeAttribute('disabled');
+                    } else {
+                        console.log('鉴权失败');
+                    }
+                } else {
+                    console.log('未知的消息类型 ' + decryptedData.type);
+                }
+            });
+
+            function handleTextMessage(data) {
+                appendMessage(data.content, 'received', Date.now());
+            }
+
+            input.addEventListener('keydown', async (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    const message = input.value;
+                    input.value = '';
+                    if (message.trim()) {
+                        const encryptedMessage = await encryptText(
+                            'oimasterkafuu',
+                            JSON.stringify({
+                                type: 'text-message',
+                                content: message
+                            })
+                        );
+
+                        socket.emit('msg', encryptedMessage);
+
+                        // 添加到聊天窗口
+                        appendMessage(message, 'sent', Date.now());
+                        await db.messages.add({
+                            content: message,
+                            timestamp: Date.now(),
+                            is_mine: true // 添加 is_mine 字段
+                        });
+                    }
+                }
+            });
+        </script>
+    </body>
 </html>
